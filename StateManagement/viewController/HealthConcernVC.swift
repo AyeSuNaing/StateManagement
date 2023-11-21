@@ -149,31 +149,40 @@ extension HealthConcernVC :  UICollectionViewDragDelegate, UICollectionViewDropD
         return [dragItem]
     }
     
-    func collectionView(_ collectionView: UICollectionView, performDropWith coordinator: UICollectionViewDropCoordinator) {
-        print("Perform drop called")
-        
-        if let destinationIndexPath = coordinator.destinationIndexPath {
-            for item in coordinator.items {
-                guard let sourceIndexPath = item.sourceIndexPath,
-                      let draggedHealth = item.dragItem.localObject as? HealthConcern else {
-                    print("Error: Unable to get sourceIndexPath or draggedHealth")
-                    continue
-                }
-                
-                print("Dropped health concern: \(draggedHealth.name)")
-                
-                resultList.remove(at: sourceIndexPath.item)
-                resultList.insert(draggedHealth, at: destinationIndexPath.item)
-                
-                collectionView.performBatchUpdates({
-                    collectionView.deleteItems(at: [sourceIndexPath])
-                    collectionView.insertItems(at: [destinationIndexPath])
-                })
-                
-                coordinator.drop(item.dragItem, toItemAt: destinationIndexPath)
-            }
-        }
-    }
+    func collectionView(_ collectionView: UICollectionView, dropSessionDidUpdate session: UIDropSession, withDestinationIndexPath destinationIndexPath: IndexPath?) -> UICollectionViewDropProposal {
+           print("Comming to dropSessionDidUpdate")
+           return UICollectionViewDropProposal(operation: .move, intent: .insertAtDestinationIndexPath)
+       }
+       
+
+       func collectionView(_ collectionView: UICollectionView, performDropWith coordinator: UICollectionViewDropCoordinator) {
+           let destinationIndexPath: IndexPath
+
+           if let indexPath = coordinator.destinationIndexPath {
+               destinationIndexPath = indexPath
+           } else {
+               // If the drop is between cells, calculate the destination index path
+               let section = collectionView.numberOfSections - 1
+               let row = collectionView.numberOfItems(inSection: section)
+               destinationIndexPath = IndexPath(row: row, section: section)
+           }
+
+           // Process the dropped items
+           coordinator.items.forEach { item in
+               guard let sourceIndexPath = item.sourceIndexPath else { return }
+               let movedItem = resultList.remove(at: sourceIndexPath.item)
+               resultList.insert(movedItem, at: destinationIndexPath.item)
+
+               collectionView.performBatchUpdates({
+                   collectionView.deleteItems(at: [sourceIndexPath])
+                   collectionView.insertItems(at: [destinationIndexPath])
+               })
+               coordinator.drop(item.dragItem, toItemAt: destinationIndexPath)
+           }
+       }
+       
+       
+       
     
     
     
